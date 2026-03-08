@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TomatoScan — Détection des maladies</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+  <div class="app-wrapper">
+    <header>
+      <div class="logo">🍅 TomatoScan</div>
+      <p class="tagline">Détectez les maladies de vos plants en un instant</p>
+    </header>
+
+    <main>
+      <!-- Zone d'upload -->
+      <div class="upload-card" id="uploadCard">
+        <div class="preview-zone" id="previewZone">
+          <div class="placeholder" id="placeholder">
+            <span class="icon">📷</span>
+            <p>Appuyez pour prendre une photo<br/>ou importer depuis la galerie</p>
+          </div>
+          <img id="previewImg" src="" alt="Aperçu" style="display:none"/>
+        </div>
+
+        <!-- Boutons caméra / galerie -->
+        <div class="btn-group">
+          <label class="btn btn-camera" for="cameraInput">
+            📸 Caméra
+          </label>
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
+
+          <label class="btn btn-gallery" for="galleryInput">
+            🖼 Galerie
+          </label>
+          <input type="file" id="galleryInput" accept="image/*" style="display:none"/>
+        </div>
+
+        <button class="btn btn-analyze" id="analyzeBtn" disabled>
+          Analyser l'image
+        </button>
+      </div>
+
+      <!-- Résultat -->
+      <div class="result-card" id="resultCard" style="display:none">
+        <div class="result-header" id="resultHeader"></div>
+        <div class="result-body">
+          <p class="disease-name" id="diseaseName"></p>
+          <div class="confidence-bar-wrap">
+            <span>Confiance</span>
+            <span id="confidenceText"></span>
+          </div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="confidenceFill"></div>
+          </div>
+        </div>
+        <button class="btn btn-reset" id="resetBtn">🔄 Nouvelle analyse</button>
+      </div>
+
+      <!-- Loader -->
+      <div class="loader" id="loader" style="display:none">
+        <div class="spinner"></div>
+        <p>Analyse en cours...</p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let selectedFile = null;
+
+    function handleFileSelect(file) {
+      if (!file) return;
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('previewImg').src = e.target.result;
+        document.getElementById('previewImg').style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('analyzeBtn').disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('cameraInput').addEventListener('change', e => handleFileSelect(e.target.files[0]));
+    document.getElementById('galleryInput').addEventListener('change', e => handleFileSelect(e.target.files[0]));
+
+    document.getElementById('analyzeBtn').addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      document.getElementById('uploadCard').style.display = 'none';
+      document.getElementById('loader').style.display = 'flex';
+      document.getElementById('resultCard').style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      try {
+        const response = await fetch('/predict', { method: 'POST', body: formData });
+        const data = await response.json();
+
+        document.getElementById('loader').style.display = 'none';
+
+        if (data.error) {
+          alert('Erreur : ' + data.error);
+          document.getElementById('uploadCard').style.display = 'block';
+          return;
+        }
+
+        const header = document.getElementById('resultHeader');
+        header.textContent = data.is_healthy ? '✅ Plant sain !' : '⚠️ Maladie détectée';
+        header.className = 'result-header ' + (data.is_healthy ? 'healthy' : 'sick');
+
+        document.getElementById('diseaseName').textContent = data.disease;
+        document.getElementById('confidenceText').textContent = data.confidence + '%';
+        document.getElementById('confidenceFill').style.width = data.confidence + '%';
+        document.getElementById('confidenceFill').style.background =
+          data.confidence > 80 ? '#22c55e' : data.confidence > 50 ? '#f59e0b' : '#ef4444';
+
+        document.getElementById('resultCard').style.display = 'block';
+      } catch (err) {
+        document.getElementById('loader').style.display = 'none';
+        alert('Erreur réseau. Réessayez.');
+        document.getElementById('uploadCard').style.display = 'block';
+      }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      selectedFile = null;
+      document.getElementById('previewImg').style.display = 'none';
+      document.getElementById('placeholder').style.display = 'flex';
+      document.getElementById('analyzeBtn').disabled = true;
+      document.getElementById('resultCard').style.display = 'none';
+      document.getElementById('uploadCard').style.display = 'block';
+      document.getElementById('cameraInput').value = '';
+      document.getElementById('galleryInput').value = '';
+    });
+  </script>
+</body>
+</html>
