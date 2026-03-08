@@ -3,16 +3,377 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TomatoScan — Détection des maladies</title>
+  <title>AgriScan — Détecteur de maladies agricoles</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Instrument+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-dark: #1a3a1f;
+      --green-mid: #2d6a35;
+      --green-accent: #4caf50;
+      --green-light: #a8d5ab;
+      --cream: #f5f0e8;
+      --amber: #e8a020;
+      --amber-light: #fde68a;
+      --red-warn: #d94f3d;
+      --text-main: #1a1a1a;
+      --text-muted: #6b7280;
+      --card-bg: #ffffff;
+      --shadow: 0 4px 24px rgba(26, 58, 31, 0.10);
+    }
+
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text-main);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 80% 0%, rgba(76,175,80,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse at 10% 90%, rgba(45,106,53,0.08) 0%, transparent 50%);
+    }
+
+    .app-wrapper {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+
+    /* HEADER */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 2rem;
+      color: var(--green-dark);
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .logo .leaf-icon {
+      font-size: 1.9rem;
+      filter: drop-shadow(0 2px 4px rgba(76,175,80,0.3));
+    }
+
+    .tagline {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    /* DISCLAIMER BANNER */
+    .disclaimer-banner {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 1.5px solid var(--amber-light);
+      border-left: 4px solid var(--amber);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .disclaimer-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .disclaimer-text {
+      font-size: 0.82rem;
+      color: #78350f;
+      line-height: 1.5;
+    }
+
+    .disclaimer-text strong {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.85rem;
+    }
+
+    /* CARDS */
+    .upload-card, .result-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(168,213,171,0.25);
+    }
+
+    /* PREVIEW ZONE */
+    .preview-zone {
+      width: 100%;
+      aspect-ratio: 4/3;
+      border-radius: 14px;
+      overflow: hidden;
+      background: linear-gradient(145deg, #f0f7f0, #e8f4e9);
+      border: 2px dashed rgba(76,175,80,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .preview-zone.has-image {
+      border-style: solid;
+      border-color: var(--green-accent);
+    }
+
+    .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .placeholder .icon {
+      font-size: 2.8rem;
+      opacity: 0.7;
+    }
+
+    .placeholder p {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: #7a9e7e;
+    }
+
+    #previewImg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* BUTTON GROUP */
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s ease;
+      text-decoration: none;
+    }
+
+    .btn-camera {
+      background: var(--green-dark);
+      color: #fff;
+    }
+
+    .btn-camera:hover {
+      background: var(--green-mid);
+      transform: translateY(-1px);
+    }
+
+    .btn-gallery {
+      background: #f0f7f0;
+      color: var(--green-dark);
+      border: 1.5px solid rgba(76,175,80,0.3);
+    }
+
+    .btn-gallery:hover {
+      background: #e0f0e1;
+      transform: translateY(-1px);
+    }
+
+    .btn-analyze {
+      width: 100%;
+      background: linear-gradient(135deg, var(--green-mid), var(--green-accent));
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 14px;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(76,175,80,0.28);
+      margin-top: 4px;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-analyze:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76,175,80,0.38);
+    }
+
+    .btn-analyze:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* RESULT CARD */
+    .result-header {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      padding: 14px 18px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .result-header.healthy {
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      color: #065f46;
+    }
+
+    .result-header.sick {
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      color: #991b1b;
+    }
+
+    .disease-name {
+      font-family: 'Cabinet Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .confidence-bar-wrap {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .confidence-bar {
+      width: 100%;
+      height: 10px;
+      background: #e8f4e9;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.6s cubic-bezier(.4,0,.2,1);
+    }
+
+    .btn-reset {
+      width: 100%;
+      background: #f0f7f0;
+      color: var(--green-dark);
+      border: 1.5px solid rgba(76,175,80,0.3);
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .btn-reset:hover {
+      background: #e0f0e1;
+      transform: translateY(-1px);
+    }
+
+    /* LOADER */
+    .loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 48px 0;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(76,175,80,0.15);
+      border-top-color: var(--green-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* SCOPE TAGS */
+    .scope-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .scope-tag {
+      background: rgba(76,175,80,0.1);
+      border: 1px solid rgba(76,175,80,0.25);
+      color: var(--green-mid);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 99px;
+    }
+  </style>
 </head>
 <body>
   <div class="app-wrapper">
     <header>
-      <div class="logo">🍅 TomatoScan</div>
-      <p class="tagline">Détectez les maladies de vos plants en un instant</p>
+      <div class="logo">
+        <span class="leaf-icon">🌿</span>
+        AgriScan
+      </div>
+      <p class="tagline">Détecteur de maladies des plantes & produits agricoles</p>
     </header>
+
+    <!-- Scope tags -->
+    <div class="scope-tags">
+      <span class="scope-tag">🌱 Cultures</span>
+      <span class="scope-tag">🍅 Légumes</span>
+      <span class="scope-tag">🌾 Céréales</span>
+      <span class="scope-tag">🍎 Fruits</span>
+    </div>
+
+    <!-- Disclaimer GPU -->
+    <div class="disclaimer-banner">
+      <span class="disclaimer-icon">⚠️</span>
+      <div class="disclaimer-text">
+        <strong>Version limitée — Tomates uniquement</strong>
+        En raison du manque d'infrastructure GPU de grande échelle, le modèle actuel a uniquement été entraîné sur les maladies des plants de tomate. La prise en charge d'autres cultures est prévue dans les prochaines versions.
+      </div>
+    </div>
 
     <main>
       <!-- Zone d'upload -->
@@ -25,7 +386,6 @@
           <img id="previewImg" src="" alt="Aperçu" style="display:none"/>
         </div>
 
-        <!-- Boutons caméra / galerie -->
         <div class="btn-group">
           <label class="btn btn-camera" for="cameraInput">
             📸 Caméra
@@ -39,7 +399,7 @@
         </div>
 
         <button class="btn btn-analyze" id="analyzeBtn" disabled>
-          Analyser l'image
+          🔍 Analyser l'image
         </button>
       </div>
 
@@ -78,6 +438,7 @@
         document.getElementById('previewImg').src = e.target.result;
         document.getElementById('previewImg').style.display = 'block';
         document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('previewZone').classList.add('has-image');
         document.getElementById('analyzeBtn').disabled = false;
       };
       reader.readAsDataURL(file);
@@ -88,7 +449,6 @@
 
     document.getElementById('analyzeBtn').addEventListener('click', async () => {
       if (!selectedFile) return;
-
       document.getElementById('uploadCard').style.display = 'none';
       document.getElementById('loader').style.display = 'flex';
       document.getElementById('resultCard').style.display = 'none';
@@ -99,7 +459,6 @@
       try {
         const response = await fetch('/predict', { method: 'POST', body: formData });
         const data = await response.json();
-
         document.getElementById('loader').style.display = 'none';
 
         if (data.error) {
@@ -130,6 +489,7 @@
       selectedFile = null;
       document.getElementById('previewImg').style.display = 'none';
       document.getElementById('placeholder').style.display = 'flex';
+      document.getElementById('previewZone').classList.remove('has-image');
       document.getElementById('analyzeBtn').disabled = true;
       document.getElementById('resultCard').style.display = 'none';
       document.getElementById('uploadCard').style.display = 'block';
