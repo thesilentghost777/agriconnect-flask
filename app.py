@@ -29,12 +29,10 @@ CLASS_NAMES = [
 
 # Taille d'entrée du modèle (adapter si nécessaire)
 IMG_SIZE = (224, 224)
-
 def preprocess_image(image_bytes):
-    """Prétraiter l'image pour le modèle"""
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     img = img.resize(IMG_SIZE)
-    img_array = np.array(img) / 255.0
+    img_array = np.array(img).astype('float32')  # ← pas de /255 !
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
