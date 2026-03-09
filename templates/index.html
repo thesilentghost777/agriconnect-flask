@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AgriScan — Détecteur de maladies agricoles</title>
   <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Instrument+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -160,6 +159,16 @@
       object-fit: cover;
     }
 
+    /* ✅ INPUTS CACHÉS — méthode fiable (pas display:none) */
+    .file-input-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
     /* BUTTON GROUP */
     .btn-group {
       display: grid;
@@ -182,6 +191,7 @@
       border: none;
       transition: all 0.18s ease;
       text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .btn-camera {
@@ -189,7 +199,7 @@
       color: #fff;
     }
 
-    .btn-camera:hover {
+    .btn-camera:hover, .btn-camera:active {
       background: var(--green-mid);
       transform: translateY(-1px);
     }
@@ -200,7 +210,7 @@
       border: 1.5px solid rgba(76,175,80,0.3);
     }
 
-    .btn-gallery:hover {
+    .btn-gallery:hover, .btn-gallery:active {
       background: #e0f0e1;
       transform: translateY(-1px);
     }
@@ -366,7 +376,7 @@
       <span class="scope-tag">🍎 Fruits</span>
     </div>
 
-    <!-- Disclaimer GPU -->
+    <!-- Disclaimer -->
     <div class="disclaimer-banner">
       <span class="disclaimer-icon">⚠️</span>
       <div class="disclaimer-text">
@@ -386,19 +396,32 @@
           <img id="previewImg" src="" alt="Aperçu" style="display:none"/>
         </div>
 
-        <div class="btn-group">
-          <label class="btn btn-camera" for="cameraInput">
-            📸 Caméra
-          </label>
-          <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none"/>
+        <!-- ✅ INPUTS CACHÉS CORRECTEMENT (plus display:none) -->
+        <input
+          type="file"
+          id="cameraInput"
+          class="file-input-hidden"
+          accept="image/*"
+          capture="environment"
+        />
+        <input
+          type="file"
+          id="galleryInput"
+          class="file-input-hidden"
+          accept="image/*"
+        />
 
-          <label class="btn btn-gallery" for="galleryInput">
+        <!-- ✅ BOUTONS avec onclick JS explicite (plus de label/for) -->
+        <div class="btn-group">
+          <button class="btn btn-camera" id="btnCamera" type="button">
+            📸 Caméra
+          </button>
+          <button class="btn btn-gallery" id="btnGallery" type="button">
             🖼 Galerie
-          </label>
-          <input type="file" id="galleryInput" accept="image/*" style="display:none"/>
+          </button>
         </div>
 
-        <button class="btn btn-analyze" id="analyzeBtn" disabled>
+        <button class="btn btn-analyze" id="analyzeBtn" type="button" disabled>
           🔍 Analyser l'image
         </button>
       </div>
@@ -416,7 +439,7 @@
             <div class="confidence-fill" id="confidenceFill"></div>
           </div>
         </div>
-        <button class="btn btn-reset" id="resetBtn">🔄 Nouvelle analyse</button>
+        <button class="btn btn-reset" id="resetBtn" type="button">🔄 Nouvelle analyse</button>
       </div>
 
       <!-- Loader -->
@@ -430,13 +453,23 @@
   <script>
     let selectedFile = null;
 
+    // ✅ Déclenchement explicite des inputs via JS
+    document.getElementById('btnCamera').addEventListener('click', () => {
+      document.getElementById('cameraInput').click();
+    });
+
+    document.getElementById('btnGallery').addEventListener('click', () => {
+      document.getElementById('galleryInput').click();
+    });
+
     function handleFileSelect(file) {
       if (!file) return;
       selectedFile = file;
       const reader = new FileReader();
       reader.onload = e => {
-        document.getElementById('previewImg').src = e.target.result;
-        document.getElementById('previewImg').style.display = 'block';
+        const img = document.getElementById('previewImg');
+        img.src = e.target.result;
+        img.style.display = 'block';
         document.getElementById('placeholder').style.display = 'none';
         document.getElementById('previewZone').classList.add('has-image');
         document.getElementById('analyzeBtn').disabled = false;
